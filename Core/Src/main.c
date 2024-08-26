@@ -31,7 +31,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define servo 20
+#define dcmoter 22
+#define ServoClose 50
+#define ServoOpen 100
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -43,6 +46,7 @@
 FDCAN_HandleTypeDef hfdcan1;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart2;
 
@@ -56,6 +60,8 @@ uint8_t RxData[8] = {};
 uint8_t TxData_motor[8] = {};
 uint8_t RxData_motor[8] = {};
 uint32_t TxMailbox;
+
+volatile uint8_t canstate=2;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,6 +70,7 @@ static void MX_GPIO_Init(void);
 static void MX_FDCAN1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -72,6 +79,7 @@ static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN 0 */
 void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs){
 	if ((RxFifo1ITs & FDCAN_IT_RX_FIFO1_NEW_MESSAGE) != RESET) {
+		canstate = 0;
 
 	        /* Retrieve Rx messages from RX FIFO0 */
 
@@ -80,11 +88,45 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 			Error_Handler();
 		}
 
-		if (RxHeader.Identifier == 0x400) {
+		if (RxHeader.Identifier == 0x100) {
+			if(RxData[0] == servo){
+				if(RxData[1] == 0){
+					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,1000-ServoClose);
+				}else if(RxData[1] == 1){
+					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,1000-ServoOpen);
+				}
+			}else if(RxData[1] == dcmoter){
+				if(RxData[1] == 0){
+					HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);
+					HAL_GPIO_WritePin(GPIOC,GPIO_PIN_8,GPIO_PIN_SET);
+				}else if(RxData[1] == 1){
+					HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(GPIOC,GPIO_PIN_8,GPIO_PIN_RESET);
+				}
+			}else{
+				HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(GPIOC,GPIO_PIN_8,GPIO_PIN_RESET);
+				__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,1000-ServoClose);
+			}
+
 
 		}
 	}
 }
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+	if(htim == &htim3){
+		if(canstate == 0){
+			canstate =1;
+		}else if(canstate == 1){
+			HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_8,GPIO_PIN_RESET);
+			__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,1000-ServoClose);
+		}
+	}
+}
+
+
 
 void FDCAN_RxTxSettings(void){
 	FDCAN_FilterTypeDef FDCAN_Filter_settings;
@@ -166,6 +208,7 @@ int main(void)
   MX_FDCAN1_Init();
   MX_TIM2_Init();
   MX_USART2_UART_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   printf("start\r\n");
   printf("can tx start\r\n");
@@ -291,9 +334,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 0;
+  htim2.Init.Prescaler = 1599;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 4294967295;
+  htim2.Init.Period = 999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
@@ -318,6 +361,51 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
+
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 7999;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 65535;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
 
 }
 
