@@ -47,7 +47,15 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+FDCAN_TxHeaderTypeDef TxHeader;
+FDCAN_RxHeaderTypeDef RxHeader;
+FDCAN_FilterTypeDef sFilterConfig;
 
+uint8_t TxData[8] = {};
+uint8_t RxData[8] = {};
+uint8_t TxData_motor[8] = {};
+uint8_t RxData_motor[8] = {};
+uint32_t TxMailbox;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -118,7 +126,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	setbuf(stdou, NULL);
+	setbuf(stdout, NULL);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
