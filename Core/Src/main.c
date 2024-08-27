@@ -33,8 +33,8 @@
 /* USER CODE BEGIN PD */
 #define servo 20
 #define dcmoter 22
-#define ServoClose 65
-#define ServoOpen 105
+#define ServoClose 50
+#define ServoOpen 100
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -213,7 +213,6 @@ int main(void)
   printf("start\r\n");
   printf("can tx start\r\n");
   FDCAN_RxTxSettings();
-  HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
