@@ -31,8 +31,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define servo 20
-#define dcmoter 22
+#define servo 6
+#define dcmotor 3
 #define ServoClose 50
 #define ServoOpen 100
 /* USER CODE END PD */
@@ -89,17 +89,18 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 		}
 
 		if (RxHeader.Identifier == 0x100) {
-			if(RxData[0] == servo){
-				if(RxData[1] == 0){
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,1000-ServoClose);
-				}else if(RxData[1] == 1){
+			if(servo == RxData[0]){
+				if(0 == RxData[1]){
 					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,1000-ServoOpen);
+				}else {
+					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,1000-ServoClose);
 				}
-			}else if(RxData[1] == dcmoter){
-				if(RxData[1] == 0){
+			}
+			else if(dcmotor == RxData[1]){
+				if(0 == RxData[1] || 1 == RxData[1]){
 					HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);
 					HAL_GPIO_WritePin(GPIOC,GPIO_PIN_8,GPIO_PIN_SET);
-				}else if(RxData[1] == 1){
+				}else{
 					HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_RESET);
 					HAL_GPIO_WritePin(GPIOC,GPIO_PIN_8,GPIO_PIN_RESET);
 				}
