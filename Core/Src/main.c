@@ -89,15 +89,21 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 		}
 
 		if (RxHeader.Identifier == 0x100) {
+			//printf("%d\r\n",RxData[0]);
 			if(servo == RxData[0]){
 				if(0 == RxData[1]){
 					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,1000-ServoOpen);
 				}else {
 					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,1000-ServoClose);
 				}
+			}else{
+				__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,1000-ServoClose);
 			}
-			else if(dcmotor == RxData[1]){
+
+			if(dcmotor == RxData[0]){
+				//printf("a\r\n");
 				if(0 == RxData[1] || 1 == RxData[1]){
+					//printf("b\r\n");
 					HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);
 					HAL_GPIO_WritePin(GPIOC,GPIO_PIN_8,GPIO_PIN_SET);
 				}else{
@@ -107,7 +113,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 			}else{
 				HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_RESET);
 				HAL_GPIO_WritePin(GPIOC,GPIO_PIN_8,GPIO_PIN_RESET);
-				__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,1000-ServoClose);
+				//__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,1000-ServoClose);
 			}
 
 
