@@ -33,8 +33,8 @@
 /* USER CODE BEGIN PD */
 #define servo 6
 #define dcmotor 3
-#define ServoClose 105
-#define ServoOpen 65
+#define ServoClose 115
+#define ServoOpen 100
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
